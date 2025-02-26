@@ -1,0 +1,53 @@
+########################################################################################################################
+## db
+########################################################################################################################
+# https://www.postgresql.jp/document/7.3/programmer/libpq-connect.html
+
+.PHONY: db-up
+db-up: $(VARS)
+	docker compose up -d postgres
+	@echo -n "Waiting boot... "
+	@docker compose exec postgres "sh" "-c" "while ! pg_isready -U code > /dev/null; do echo -n '.'; sleep 1; done"
+	@echo "[OK]"
+
+.PHONY: db-down
+db-down:
+	docker compose down postgres
+
+.PHONY: db-cli
+db-cli:
+	docker compose exec postgres psql "user=$(PSQL_USER) password=$(PSQL_PASS) dbname=$(PSQL_NAME)"
+
+.PHONY: db-run
+db-run:
+	docker compose exec -T postgres psql "user=$(PSQL_USER) password=$(PSQL_PASS) dbname=$(PSQL_NAME)"
+
+.PHONY: db-dump
+db-dump:
+	docker compose exec postgres pg_dump "user=$(PSQL_USER) password=$(PSQL_PASS) dbname=$(PSQL_NAME)"
+
+.PHONY: db-read
+db-read: db-up
+	docker compose exec -T postgres psql "user=$(PSQL_USER) password=$(PSQL_PASS) dbname=$(PSQL_NAME)"
+
+.PHONY: db-vacuum
+db-vacuum:
+	echo "VACUUM ANALYZE;" | docker compose exec -T postgres psql "user=$(PSQL_USER) password=$(PSQL_PASS)"
+
+.PHONY: db-log
+db-log:
+	docker compose logs postgres -f --tail 0
+
+## backup / restore
+
+.PHONY: db-backup
+db-backup:
+	$(MAKE) db-dump > dump.sql
+
+.PHONY: db-restore
+db-restore:
+	$(MAKE) db-read < dump.sql
+
+.PHONY: db-ip
+db-ip:
+	@docker compose exec -T postgres /bin/hostname -i
