@@ -4,7 +4,7 @@
 # https://www.postgresql.jp/document/7.3/programmer/libpq-connect.html
 
 .PHONY: db-up
-db-up: $(VARS)
+db-up: vars
 	docker compose up -d mysql
 	@echo -n "Waiting boot... "
 	@docker compose exec postgres "sh" "-c" "while ! mysqladmin ping -hmysql --silent; do echo -n '.'; sleep 1; done"
